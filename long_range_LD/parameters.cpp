@@ -84,25 +84,8 @@ parameters::parameters(int argc, char *argv[])
 	vcf_filename="";
 	vcf_format = false;
 	vcf_compressed = false;
-	n_iterations = 1000;	// Unused.
 	seed = time(0);
 	generator.seed(seed);
-	hmm_subset = true;
-
-	pedigree_filename = "";
-	simulate = -1;
-	viterbi = false;
-	fwdbwd = false;
-	lazy_viterbi = true;
-	genotype = false;
-
-	male_map_file = "";
-	female_map_file = "";
-	male_recomb_rate = 0.92;	// cM/Mb from Campbell et al.
-	female_recomb_rate = 1.48;	// cM/Mb from Campbell et al.
-
-	subpedigree_size = 5;	// Number of trios to start with.
-	max_allowed_states = 512;
 }
 
 void parameters::read_parameters()
@@ -225,22 +208,8 @@ void parameters::read_parameters()
 		else if (in_str == "--temp") { temp_dir = get_arg(i+1); i++;}	// Directory for vcftools temporary files
 		else if (in_str == "--to-bp") { end_pos = atoi(get_arg(i+1).c_str()); i++; }						// End position
 		else if (in_str == "--thin") { min_interSNP_distance = atoi(get_arg(i+1).c_str()); i++; }	// Set minimum distance between SNPs
-		else if (in_str == "--ped") { pedigree_filename = get_arg(i+1); i++; }
-		else if (in_str == "--it") { n_iterations = atoi(get_arg(i+1).c_str()); i++; }
-		else if (in_str == "--sim") {simulate = atoi(get_arg(i+1).c_str()); i++; }
-		else if (in_str == "--seed") { seed = atoi(get_arg(i+1).c_str()); i++; generator.seed(seed); }
-		else if (in_str == "--viterbi") { viterbi = true; }
-		else if (in_str == "--lazy-viterbi") { lazy_viterbi = true; }
-		else if (in_str == "--fwdbwd") { fwdbwd = true; }
-		//else if (in_str == "--nosubset") { hmm_subset = false; }
-		else if (in_str == "--genotype") { genotype = true; }
-		else if (in_str == "--subset") { subpedigree_size = atoi(get_arg(i+1).c_str()); i++; }
-		else if (in_str == "--max-states") { max_allowed_states = atoi(get_arg(i+1).c_str()); i++; }
-		else if (in_str == "--male-map") { male_map_file = get_arg(i+1); i++; }
-		else if (in_str == "--female-map") { female_map_file = get_arg(i+1); i++; }
-		else if (in_str == "--male-rate") { male_recomb_rate = atof(get_arg(i+1).c_str()); i++; }
-		else if (in_str == "--female-rate") { female_recomb_rate = atof(get_arg(i+1).c_str()); i++; }
-		else
+        else if (in_str == "--seed") { seed = atoi(get_arg(i+1).c_str()); i++; generator.seed(seed); }
+        else
 			error("Unknown option: " + string(in_str), 0);
 		i++;
 	}
@@ -289,7 +258,6 @@ void parameters::print_params()
 		}
 	}
 	if (contigs_file != defaults.contigs_file) LOG.printLOG("\t--contigs " + contigs_file + "\n");
-	if (pedigree_filename != defaults.pedigree_filename) LOG.printLOG("\t--ped " + pedigree_filename + "\n");
 	if (end_pos != defaults.end_pos) LOG.printLOG("\t--to-bp " + output_log::int2str(end_pos) + "\n");
 	if (exclude_positions_file != defaults.exclude_positions_file) LOG.printLOG("\t--exclude-positions " + exclude_positions_file + "\n");
 	if (exclude_positions_overlap_file != defaults.exclude_positions_overlap_file) LOG.printLOG("\t--exclude-positions-overlap " + exclude_positions_overlap_file + "\n");
@@ -328,7 +296,6 @@ void parameters::print_params()
 	if (min_non_ref_af != defaults.min_non_ref_af) LOG.printLOG("\t--non-ref-af " + output_log::dbl2str(min_non_ref_af, 3) + "\n");
 	if (min_non_ref_ac_any != defaults.min_non_ref_ac_any) LOG.printLOG("\t--non-ref-ac-any " + output_log::dbl2str(min_non_ref_ac_any, 3) + "\n");
 	if (min_non_ref_af_any != defaults.min_non_ref_af_any) LOG.printLOG("\t--non-ref-af-any " + output_log::dbl2str(min_non_ref_af_any, 3) + "\n");
-	if (n_iterations != defaults.n_iterations) LOG.printLOG("\t--it " + output_log::int2str(n_iterations) + "\n");
 	if (output_prefix != defaults.output_prefix) LOG.printLOG("\t--out " + output_prefix + "\n");
 	if (phased_only) LOG.printLOG("\t--phased\n");
 	if (positions_file != defaults.positions_file) LOG.printLOG("\t--positions " + positions_file + "\n");
@@ -341,16 +308,7 @@ void parameters::print_params()
 	if (start_pos != defaults.start_pos) LOG.printLOG("\t--from-bp " + output_log::int2str(start_pos) + "\n");
 	if (stream_out != defaults.stream_out) LOG.printLOG("\t--stdout\n");
 	if (temp_dir != defaults.temp_dir) LOG.printLOG("\t--temp " + temp_dir + "\n");
-	if (simulate != defaults.simulate) LOG.printLOG("\t--sim " + output_log::int2str(simulate) + "\n");
-	if (max_allowed_states != defaults.max_allowed_states) LOG.printLOG("\t--max-states " + output_log::int2str(max_allowed_states) + "\n");
-	if (subpedigree_size != defaults.subpedigree_size) LOG.printLOG("\t--subset " + output_log::int2str(subpedigree_size) + "\n");
-	if (viterbi != defaults.viterbi) LOG.printLOG("\t--viterbi\n");
-	if (genotype != defaults.genotype) LOG.printLOG("\t--genotype\n");
-	if (male_map_file != defaults.male_map_file) LOG.printLOG("\t--male-map " + male_map_file + "\n");
-	if (female_map_file != defaults.female_map_file) LOG.printLOG("\t--female-map " + male_map_file + "\n");
-	if (male_recomb_rate != defaults.male_recomb_rate) LOG.printLOG("\t--male-rate " + output_log::dbl2str(male_recomb_rate, 3) + "\n");
-	if (female_recomb_rate != defaults.female_recomb_rate) LOG.printLOG("\t--female-rate " + output_log::dbl2str(female_recomb_rate, 3) + "\n");
-	LOG.printLOG("\t--seed " + output_log::int2str(seed) + "\n");
+    LOG.printLOG("\t--seed " + output_log::int2str(seed) + "\n");
 
 	if (site_filter_flags_to_exclude.size() > 0)
 		for (set<string>::iterator it=site_filter_flags_to_exclude.begin(); it != site_filter_flags_to_exclude.end(); ++it)
@@ -447,7 +405,7 @@ void parameters::print_help()
 		in_str = argv[i];
 		if ((in_str == "-h") || (in_str == "-?") || (in_str == "-help") || (in_str == "--?") || (in_str == "--help") || (in_str == "--h"))
 		{
-			cout << endl << "Gandalf (" << VCFTOOLS_VERSION << ")" << endl;
+			cout << endl << "long_range_LD (" << VCFTOOLS_VERSION << ")" << endl;
 			cout << "\u00A9 Adam Auton 2015" << endl << endl;
 			cout << "Process Variant Call Format files" << endl;
 			cout << endl;

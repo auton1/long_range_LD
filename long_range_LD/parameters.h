@@ -109,22 +109,7 @@ public:
 	bool vcf_format;
 	bool vcf_compressed;
 
-	string pedigree_filename;
-	int n_iterations;
-	int simulate;
 	unsigned int seed;
-	bool viterbi;
-	bool lazy_viterbi;
-	bool fwdbwd;
-	bool hmm_subset;
-	bool genotype;
-	int subpedigree_size;
-	int max_allowed_states;
-	string male_map_file;
-	string female_map_file;
-	double male_recomb_rate;
-	double female_recomb_rate;
-
 	default_random_engine generator;
 
 	parameters(int argc, char *argv[]);

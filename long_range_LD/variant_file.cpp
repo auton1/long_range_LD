@@ -9,6 +9,62 @@
 
 variant_file::~variant_file() {}
 
+void variant_file::read_data(const parameters &params, vector<tuple<string, int, double, vector<bool>> > &out_chr_pos_freq_data)
+{
+    vector<char> variant_line;
+    entry *e = get_entry_object();
+    istringstream ss;
+  
+    vector<int> allele_counts;
+    unsigned int N_non_missing_chr;
+    
+    while(!eof())
+    {
+        get_entry(variant_line);
+        e->reset(variant_line);
+        N_entries += e->apply_filters(params);
+        
+        if(!e->passed_filters)
+            continue;
+        N_kept_entries++;
+        e->parse_basic_entry(true);
+        
+        if (e->get_N_alleles() != 2)
+        {
+            LOG.one_off_warning("\t: Only using biallelic loci.");
+            continue;
+        }
+        
+        e->parse_genotype_entries(true);
+        
+        string CHROM = e->get_CHROM();
+        int POS = e->get_POS();
+        
+        e->get_allele_counts(allele_counts, N_non_missing_chr);
+        
+        if (N_non_missing_chr != e->N_indv*2)
+        {
+            LOG.one_off_warning("\t: Only using sites with no missing data.");
+            continue;
+        }
+        
+        double freq = allele_counts[1]/(double)N_non_missing_chr;
+        
+        pair<int,int> genotype;
+        vector<bool> data(N_non_missing_chr);
+        for (unsigned int ui=0; ui<e->N_indv; ui++)
+        {
+            e->get_indv_GENOTYPE_ids(ui, genotype);
+            data[2*ui]=(bool)genotype.first;
+            data[(2*ui)+1]=(bool)genotype.second;
+        }
+        
+        out_chr_pos_freq_data.push_back(make_tuple(CHROM, POS, freq, data));
+    }
+    delete e;
+}
+
+
 void variant_file::read_PL_data(const parameters &params, int GL_or_PL, vector<int> &out_pos, vector<string> &ref, vector<string> &alt, vector< vector<vector<double> > > &out_matrix)
 {
 	if (meta_data.has_genotypes == false)

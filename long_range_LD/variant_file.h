@@ -77,6 +77,7 @@ public:
 	void filter_individuals_randomly(int max_N_indv);
 
 	void read_PL_data(const parameters &params, int GL_or_PL, vector<int> &out_pos, vector<string> &ref, vector<string> &alt, vector< vector<vector<double> > > &out_matrix);
+    void read_data(const parameters &params, vector<tuple<string, int, double, vector<bool>> > &out_chr_pos_freq_data);
 
 	void write_stats(const parameters &params);
 
