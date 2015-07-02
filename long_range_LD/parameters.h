@@ -111,6 +111,8 @@ public:
 
 	unsigned int seed;
 	default_random_engine generator;
+    
+    double threshold;
 
 	parameters(int argc, char *argv[]);
 	~parameters(){};

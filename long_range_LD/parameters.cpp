@@ -84,8 +84,10 @@ parameters::parameters(int argc, char *argv[])
 	vcf_filename="";
 	vcf_format = false;
 	vcf_compressed = false;
-	seed = time(0);
+	seed = (unsigned int)time(0);
 	generator.seed(seed);
+    
+    threshold = 0.5;
 }
 
 void parameters::read_parameters()
@@ -209,6 +211,7 @@ void parameters::read_parameters()
 		else if (in_str == "--to-bp") { end_pos = atoi(get_arg(i+1).c_str()); i++; }						// End position
 		else if (in_str == "--thin") { min_interSNP_distance = atoi(get_arg(i+1).c_str()); i++; }	// Set minimum distance between SNPs
         else if (in_str == "--seed") { seed = atoi(get_arg(i+1).c_str()); i++; generator.seed(seed); }
+        else if (in_str == "--threshold") { threshold = atof(get_arg(i+1).c_str()); i++; }
         else
 			error("Unknown option: " + string(in_str), 0);
 		i++;
@@ -308,6 +311,9 @@ void parameters::print_params()
 	if (start_pos != defaults.start_pos) LOG.printLOG("\t--from-bp " + output_log::int2str(start_pos) + "\n");
 	if (stream_out != defaults.stream_out) LOG.printLOG("\t--stdout\n");
 	if (temp_dir != defaults.temp_dir) LOG.printLOG("\t--temp " + temp_dir + "\n");
+    
+    if (threshold != defaults.threshold) LOG.printLOG("\t--threshold " + output_log::dbl2str(threshold, 3) + "\n");
+    
     LOG.printLOG("\t--seed " + output_log::int2str(seed) + "\n");
 
 	if (site_filter_flags_to_exclude.size() > 0)
@@ -427,7 +433,6 @@ void parameters::check_parameters()
 	if (num_outputs > 1) error("Only one output function may be called.",0);
 	if (vcf_filename == "" && !stream_in) error("Input file required.", 0);
 	if (vcf_format == false && bcf_format == false) error("Must specify input file type",0);
-	if (chrs_to_keep.size() != 1) error("Must specify a single chromosome.", 1);
 	if (end_pos < start_pos) error("End position must be greater than Start position.", 1);
 	if (((end_pos != numeric_limits<int>::max()) || (start_pos != -1)) && (chrs_to_keep.size() != 1)) error("Require a single chromosome when specifying a range.", 2);
 	if (max_maf < min_maf) error("Maximum MAF must be not be less than Minimum MAF.", 4);
