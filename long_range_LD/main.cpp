@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
     
     cout << "CHR1\tPOS1\tFREQ1\tCHR2\tPOS2\tFREQ2\tPHI" << endl;
     
+    double thresSQ = params.threshold*params.threshold;
     int startposi = 1;
     for (unsigned int i=0; i<N_pos-1; i++)
     {
@@ -84,10 +85,10 @@ int main(int argc, char *argv[])
             double B = get<2>(chridx_pos_freq_data[j]);
             if (j >= startposi)
             {
-                double upper = sqrt(B*(1-A)/(A*(1-B)));
+                double upper = (B*(1.0-A)/(A*(1.0-B)));
                 bound_test++;
             
-                if (upper < params.threshold)
+                if (upper < thresSQ)
                 {   // Pruning by the monotone property
                     if ((j>i+1) || (startposi == (N_pos-1)))
                     {
@@ -119,16 +120,21 @@ int main(int argc, char *argv[])
                 C += (data1[ui] && data2[ui]);
             C = C / data1.size();
             
-            double phi = (C - A*B) / sqrt(A*B*(1-A)*(1-B));
-            tested_count++;
-        
-            if (phi >= params.threshold)
+            double AB = A*B;
+            
+            if (C > AB)
             {
-                string CHR1 = chridx_to_chr[CHR1idx];
-                string CHR2 = chridx_to_chr[CHR2idx];
-                
-                cout << CHR1 << "\t" << POS1 << "\t" << A << "\t" << CHR2 << "\t" << POS2 << "\t" << B << "\t" << phi << endl;
-                passed_count++;
+                double phiSQ = (C - AB) * (C - AB) / (AB*(1-A)*(1-B));
+                tested_count++;
+            
+                if (phiSQ >= thresSQ)
+                {
+                    string CHR1 = chridx_to_chr[CHR1idx];
+                    string CHR2 = chridx_to_chr[CHR2idx];
+                    
+                    cout << CHR1 << "\t" << POS1 << "\t" << A << "\t" << CHR2 << "\t" << POS2 << "\t" << B << "\t" << sqrt(phiSQ) << endl;
+                    passed_count++;
+                }
             }
         }
         if (startposi == (i+1))
@@ -189,84 +195,85 @@ int main(int argc, char *argv[])
     LOG.printLOG("Found " + LOG.int2str(passed_count) + " sites with Pearson > " + LOG.dbl2str(params.threshold, 3) + "\n");
     */
 
-    if (params.skip_neg == false)
+    LOG.printLOG("TAPER 2D loop for negative correlations.\n");
+    tested_count = 0;
+    passed_count = 0;
+    bound_test=0;
+    thresSQ = -params.threshold*params.threshold;
+    
+    for (unsigned int i=0; i<N_pos-1; i++)
     {
-        LOG.printLOG("TAPER 2D loop for negative correlations.\n");
-        tested_count = 0;
-        passed_count = 0;
-        bound_test=0;
+        double A = get<2>(chridx_pos_freq_data[i]);
+        vector<bool> data1 = get<3>(chridx_pos_freq_data[i]);
         
-        for (unsigned int i=0; i<N_pos-1; i++)
+        for (unsigned int j=i+1; j<N_pos; j++)
         {
-            double A = get<2>(chridx_pos_freq_data[i]);
-            vector<bool> data1 = get<3>(chridx_pos_freq_data[i]);
+            double B = get<2>(chridx_pos_freq_data[j]);
+            double lower;
+            double AB = A*B;
+            double mAmB = (1.0-A)*(1.0-B);
             
-            for (unsigned int j=i+1; j<N_pos; j++)
+            if ((A+B) > 1.0)
+            { // These will be tested first due to the (descending) ordering of the list
+                lower = -(mAmB/AB);
+                bound_test++;
+                if (lower > thresSQ)
+                {   // Pruning by the monotone property
+                    continue;   // Skip this one.
+                }
+            }
+            else
+            {   // A+B <= 1.0, which will necessarily be tested after the A+B > 1.0 sites.
+                bound_test++;
+                lower = -(AB/mAmB);
+                if (lower > thresSQ)
+                {   // Pruning by the monotone property
+                    break;  // Finally, no need to continue.
+                }
+            }
+            
+            int CHR1idx = get<0>(chridx_pos_freq_data[i]);
+            int CHR2idx = get<0>(chridx_pos_freq_data[j]);
+            int POS1 = get<1>(chridx_pos_freq_data[i]);
+            int POS2 = get<1>(chridx_pos_freq_data[j]);
+            
+            if ((CHR1idx == CHR2idx) && (abs(POS1 - POS2) < params.min_dist))
+            {   // SNPs too close
+                continue;
+            }
+            
+            // Refine here...
+            vector<bool> data2 = get<3>(chridx_pos_freq_data[j]);
+            
+            double C = 0;
+            for (unsigned int ui=0; ui<data1.size(); ui++)
+                C += (data1[ui] && data2[ui]);
+            C = C / data1.size();
+            
+            double phi = (C - AB) / sqrt(AB * mAmB);
+            tested_count++;
+            
+            if (phi <= -params.threshold)
             {
-                double B = get<2>(chridx_pos_freq_data[j]);
-                double lower;
-                
-                if ((A+B) > 1.0)
-                { // These will be tested first due to the (descending) ordering of the list
-                    lower = -sqrt(((1-A)*(1-B))/(A*B));
-                    bound_test++;
-                    if (lower > -params.threshold)
-                    {   // Pruning by the monotone property
-                        continue;   // Skip this one.
-                    }
-                }
-                else
-                {   // A+B <= 1.0, which will necessarily be tested after the A+B > 1.0 sites.
-                    bound_test++;
-                    lower = -sqrt((A*B)/((1-A)*(1-B)));
-                    if (lower > -params.threshold)
-                    {   // Pruning by the monotone property
-                        break;  // Finally, no need to continue.
-                    }
-                }
-                
                 int CHR1idx = get<0>(chridx_pos_freq_data[i]);
                 int CHR2idx = get<0>(chridx_pos_freq_data[j]);
                 int POS1 = get<1>(chridx_pos_freq_data[i]);
                 int POS2 = get<1>(chridx_pos_freq_data[j]);
                 
-                if ((CHR1idx == CHR2idx) && (abs(POS1 - POS2) < params.min_dist))
-                {   // SNPs too close
-                    continue;
-                }
+                string CHR1 = chridx_to_chr[CHR1idx];
+                string CHR2 = chridx_to_chr[CHR2idx];
                 
-                // Refine here...
-                vector<bool> data2 = get<3>(chridx_pos_freq_data[j]);
-                
-                double C = 0;
-                for (unsigned int ui=0; ui<data1.size(); ui++)
-                    C += (data1[ui] && data2[ui]);
-                C = C / data1.size();
-                
-                double phi = (C - A*B) / sqrt(A*B*(1-A)*(1-B));
-                tested_count++;
-
-                if (phi <= -params.threshold)
-                {
-                    int CHR1idx = get<0>(chridx_pos_freq_data[i]);
-                    int CHR2idx = get<0>(chridx_pos_freq_data[j]);
-                    int POS1 = get<1>(chridx_pos_freq_data[i]);
-                    int POS2 = get<1>(chridx_pos_freq_data[j]);
-                    
-                    string CHR1 = chridx_to_chr[CHR1idx];
-                    string CHR2 = chridx_to_chr[CHR2idx];
-                    
-                    cout << CHR1 << "\t" << POS1 << "\t" << A << "\t" << CHR2 << "\t" << POS2 << "\t" << B << "\t" << phi << endl;
-                    passed_count++;
-                }
-                
+                cout << CHR1 << "\t" << POS1 << "\t" << A << "\t" << CHR2 << "\t" << POS2 << "\t" << B << "\t" << phi << endl;
+                passed_count++;
             }
+            
         }
-
-        LOG.printLOG("Lower Bound Tests " + LOG.int2str(bound_test) + "\n");
-        LOG.printLOG("Tested " + LOG.int2str(tested_count) + " candidates out of a possible " + LOG.int2str(N_pos*(N_pos-1)/2) + "\n");
-        LOG.printLOG("Found " + LOG.int2str(passed_count) + " sites with Pearson <= " + LOG.dbl2str(-params.threshold, 3) + "\n");
     }
+    
+    LOG.printLOG("Lower Bound Tests " + LOG.int2str(bound_test) + "\n");
+    LOG.printLOG("Tested " + LOG.int2str(tested_count) + " candidates out of a possible " + LOG.int2str(N_pos*(N_pos-1)/2) + "\n");
+    LOG.printLOG("Found " + LOG.int2str(passed_count) + " sites with Pearson <= " + LOG.dbl2str(-params.threshold, 3) + "\n");
+    
 
     time(&end);
     double running_time = difftime(end,start);
