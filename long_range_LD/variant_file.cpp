@@ -9,7 +9,7 @@
 
 variant_file::~variant_file() {}
 
-void variant_file::read_data(const parameters &params, vector<tuple<string, int, double, vector<bool>> > &out_chr_pos_freq_data)
+void variant_file::read_data(const parameters &params, vector<tuple<int, int, double, vector<bool>> > &out_chridx_pos_freq_data, map<int,string> &chridx_to_chr)
 {
     vector<char> variant_line;
     entry *e = get_entry_object();
@@ -17,6 +17,9 @@ void variant_file::read_data(const parameters &params, vector<tuple<string, int,
   
     vector<int> allele_counts;
     unsigned int N_non_missing_chr;
+    int chr_idx = 0;
+    int current_chr_idx = 0;
+    string last_CHROM = "";
     
     while(!eof())
     {
@@ -40,6 +43,14 @@ void variant_file::read_data(const parameters &params, vector<tuple<string, int,
         string CHROM = e->get_CHROM();
         int POS = e->get_POS();
         
+        if (CHROM != last_CHROM)
+        {
+            chridx_to_chr[chr_idx] = CHROM;
+            current_chr_idx = chr_idx;
+            chr_idx++;
+            last_CHROM = CHROM;
+        }
+        
         e->get_allele_counts(allele_counts, N_non_missing_chr);
         
         if (N_non_missing_chr != e->N_indv*2)
@@ -59,7 +70,7 @@ void variant_file::read_data(const parameters &params, vector<tuple<string, int,
             data[(2*ui)+1]=(bool)genotype.second;
         }
         
-        out_chr_pos_freq_data.push_back(make_tuple(CHROM, POS, freq, data));
+        out_chridx_pos_freq_data.push_back(make_tuple(current_chr_idx, POS, freq, data));
     }
     delete e;
 }

@@ -113,6 +113,8 @@ public:
 	default_random_engine generator;
     
     double threshold;
+    int min_dist;
+    bool skip_neg;
 
 	parameters(int argc, char *argv[]);
 	~parameters(){};

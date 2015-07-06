@@ -88,6 +88,8 @@ parameters::parameters(int argc, char *argv[])
 	generator.seed(seed);
     
     threshold = 0.5;
+    min_dist = 0;
+    skip_neg = false;
 }
 
 void parameters::read_parameters()
@@ -212,6 +214,8 @@ void parameters::read_parameters()
 		else if (in_str == "--thin") { min_interSNP_distance = atoi(get_arg(i+1).c_str()); i++; }	// Set minimum distance between SNPs
         else if (in_str == "--seed") { seed = atoi(get_arg(i+1).c_str()); i++; generator.seed(seed); }
         else if (in_str == "--threshold") { threshold = atof(get_arg(i+1).c_str()); i++; }
+        else if (in_str == "--mindist") { min_dist = atoi(get_arg(i+1).c_str()); i++; }
+        else if (in_str == "--skipneg") { skip_neg = true; }
         else
 			error("Unknown option: " + string(in_str), 0);
 		i++;
@@ -313,6 +317,8 @@ void parameters::print_params()
 	if (temp_dir != defaults.temp_dir) LOG.printLOG("\t--temp " + temp_dir + "\n");
     
     if (threshold != defaults.threshold) LOG.printLOG("\t--threshold " + output_log::dbl2str(threshold, 3) + "\n");
+    if (min_dist != defaults.min_dist) LOG.printLOG("\t--mindist " + output_log::int2str(min_dist) + "\n");
+    if (skip_neg != defaults.skip_neg) LOG.printLOG("\t--skipneg\n");
     
     LOG.printLOG("\t--seed " + output_log::int2str(seed) + "\n");
 
