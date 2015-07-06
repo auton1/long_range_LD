@@ -49,6 +49,7 @@ void variant_file::read_data(const parameters &params, vector<tuple<int, int, do
             current_chr_idx = chr_idx;
             chr_idx++;
             last_CHROM = CHROM;
+            LOG.printLOG("\t" + CHROM + "\n");
         }
         
         e->get_allele_counts(allele_counts, N_non_missing_chr);
