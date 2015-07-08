@@ -47,31 +47,40 @@ void variant_file::read_data(const parameters &params, vector<tuple<int, int, do
         {
             chridx_to_chr[chr_idx] = CHROM;
             current_chr_idx = chr_idx;
+            LOG.printLOG("\t" + CHROM + " index " + LOG.int2str(chr_idx) + "\n");
             chr_idx++;
             last_CHROM = CHROM;
-            LOG.printLOG("\t" + CHROM + "\n");
         }
         
         e->get_allele_counts(allele_counts, N_non_missing_chr);
-        
-        if (N_non_missing_chr != e->N_indv*2)
-        {
-            LOG.one_off_warning("\t: Only using sites with no missing data.");
-            continue;
-        }
         
         double freq = allele_counts[1]/(double)N_non_missing_chr;
         
         pair<int,int> genotype;
         vector<bool> data(N_non_missing_chr);
+        int count = 0;
+        bool keep = true;
         for (unsigned int ui=0; ui<e->N_indv; ui++)
         {
+            if (include_indv[ui] == false)
+                continue;
+            
             e->get_indv_GENOTYPE_ids(ui, genotype);
-            data[2*ui]=(bool)genotype.first;
-            data[(2*ui)+1]=(bool)genotype.second;
+            
+            if ((genotype.first < 0) || (genotype.second < 0) || (e->include_genotype[ui] == false))
+            {
+                keep = false;
+                LOG.one_off_warning("Only keeping sites with no missing data.\n");
+                break;
+            }
+            
+            data[count]=(bool)genotype.first;
+            data[count+1]=(bool)genotype.second;
+            count += 2;
         }
         
-        out_chridx_pos_freq_data.push_back(make_tuple(current_chr_idx, POS, freq, data));
+        if (keep == true)
+            out_chridx_pos_freq_data.push_back(make_tuple(current_chr_idx, POS, freq, data));
     }
     delete e;
 }

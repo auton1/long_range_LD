@@ -69,8 +69,10 @@ int main(int argc, char *argv[])
                                                     }); // Sort tuple by third column
     
     
-    LOG.printLOG("Taper 2D loop for positive correlations.\n");
+    if (N_pos == 0)
+        LOG.error("No positions left!\n");
     
+    LOG.printLOG("Taper 2D loop for positive correlations.\n");
     cout << "CHR1\tPOS1\tFREQ1\tCHR2\tPOS2\tFREQ2\tPHI" << endl;
     
     double thresSQ = params.threshold*params.threshold;
