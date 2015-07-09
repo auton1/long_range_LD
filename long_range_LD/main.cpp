@@ -257,11 +257,6 @@ int main(int argc, char *argv[])
             
             if (phi <= -params.threshold)
             {
-                int CHR1idx = get<0>(chridx_pos_freq_data[i]);
-                int CHR2idx = get<0>(chridx_pos_freq_data[j]);
-                int POS1 = get<1>(chridx_pos_freq_data[i]);
-                int POS2 = get<1>(chridx_pos_freq_data[j]);
-                
                 string CHR1 = chridx_to_chr[CHR1idx];
                 string CHR2 = chridx_to_chr[CHR2idx];
                 
